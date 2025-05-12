@@ -97,6 +97,12 @@ vim.g.have_nerd_font = false
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 vim.opt.foldmethod = 'indent'
+vim.opt.foldlevel = 99 -- Start with all folds open
+vim.opt.foldlevelstart = 99 -- Start with all folds open
+vim.opt.tabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.softtabstop = 2
+vim.opt.expandtab = true -- Use spaces instead of tabs by default
 -- Make line numbers default
 --vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
@@ -143,10 +149,9 @@ vim.opt.splitbelow = true
 -- Sets how neovim will display certain whitespace characters in the editor.
 --  See `:help 'list'`
 --  and `:help 'listchars'`
-vim.opt.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
-
+vim.opt.list = false
 -- Preview substitutions live, as you type!
+vim.opt.listchars = { tab = '│ ', trail = '·', nbsp = '␣' } -- Box Drawings Light Vertical (U+2502)
 vim.opt.inccommand = 'split'
 
 -- Show which line your cursor is on
@@ -164,7 +169,17 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-
+--copy diagnostic
+vim.keymap.set('n', '<leader>yd', function()
+  local diagnostics = vim.diagnostic.get(0, { lnum = vim.api.nvim_win_get_cursor(0)[1] - 1 })
+  if #diagnostics > 0 then
+    local messages = {}
+    for _, d in ipairs(diagnostics) do
+      table.insert(messages, d.message)
+    end
+    vim.fn.setreg('+', table.concat(messages, '\n'))
+  end
+end)
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
 -- is not what someone will guess without a bit more experience.
@@ -476,6 +491,7 @@ require('lazy').setup({
           { name = 'buffer' },
         },
       })
+
       -- Brief aside: **What is LSP?**
       --
       -- LSP is an initialism you've probably heard, but might not understand what it is.
@@ -665,6 +681,7 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'tailwindcss-language-server',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -840,15 +857,36 @@ require('lazy').setup({
       }
     end,
   },
+  -- {
+  --   'sainnhe/gruvbox-material',
+  --   priority = 1000,
+  --   config = function()
+  --     vim.g.gruvbox_material_foreground = 'original'
+  --     vim.g.gruvbox_material_background = 'medium'
+  --     vim.g.gruvbox_material_enable_italic = 1
+  --     vim.g.gruvbox_material_better_performance = 1
+  --     vim.cmd [[colorscheme gruvbox-material]]
+  --   end,
+  -- },
+  --
+  --
+
   {
-    'sainnhe/gruvbox-material',
-    priority = 1000,
+    'catppuccin/nvim',
+    name = 'catppuccin',
+    lazy = false, -- load immediately
+    priority = 1000, -- high priority to ensure it loads first
     config = function()
-      vim.g.gruvbox_material_foreground = 'original'
-      vim.g.gruvbox_material_background = 'medium'
-      vim.g.gruvbox_material_enable_italic = 1
-      vim.g.gruvbox_material_better_performance = 1
-      vim.cmd [[colorscheme gruvbox-material]]
+      require('catppuccin').setup {
+        flavour = 'frappe', -- default flavor (can be "latte", "frappe", "macchiato", or "mocha")
+        transparent_background = false,
+        term_colors = true,
+        styles = {
+          comments = { 'italic' },
+          conditionals = { 'italic' },
+        },
+      }
+      vim.cmd.colorscheme 'catppuccin-frappe' -- apply the colorscheme
     end,
   },
   -- {
@@ -1054,7 +1092,17 @@ require('lazy').setup({
       vim.g.db_ui_save_location = vim.fn.stdpath 'config' .. '/db_ui'
     end,
   },
-
+  {
+    'lukas-reineke/indent-blankline.nvim',
+    main = 'ibl',
+    opts = {
+      indent = {
+        char = '│',
+        tab_char = '│', -- Explicitly telling indent-blankline how to handle tabs
+      },
+      scope = { enabled = true },
+    },
+  },
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
